@@ -1,0 +1,17 @@
+{
+  "name": "shift-four-properties-api",
+  "version": "1.0.0",
+  "description": "Backend API for Shift Four Properties lead intake",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test:email": "node scripts/test-email.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "nodemailer": "^6.9.16"
+  }
+}
