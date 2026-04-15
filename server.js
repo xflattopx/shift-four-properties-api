@@ -75,9 +75,9 @@ function createTransporter(mailConfig) {
 }
 
 function validateLead(payload) {
-    const { name, phone, address, condition } = payload;
+    const { name, phone, address, condition, timeline } = payload;
 
-    if (!name || !phone || !address || !condition) {
+    if (!name || !phone || !address || !condition || !timeline) {
         return 'Missing required fields.';
     }
 
@@ -100,7 +100,7 @@ app.post('/api/leads', async (req, res) => {
         return res.status(500).json({ ok: false, message: 'Email settings are incomplete on the server.' });
     }
 
-    const { name, phone, address, condition } = req.body;
+    const { name, phone, address, condition, timeline } = req.body;
     const transporter = createTransporter(mailConfig);
 
     const submittedAt = new Date().toLocaleString('en-US', {
@@ -108,15 +108,23 @@ app.post('/api/leads', async (req, res) => {
         timeStyle: 'short'
     });
 
-    const subject = `New Seller Lead: ${name}`;
+    // Flag urgent leads in subject line
+    const isUrgent = timeline && timeline.toLowerCase().includes('asap');
+    const subject = isUrgent
+        ? `🔥 URGENT Seller Lead: ${name} — Needs to sell NOW`
+        : `New Seller Lead: ${name}`;
+
     const text = [
-        'New motivated seller lead received.',
+        isUrgent ? '⚠️  URGENT — Seller indicated they need to sell ASAP.' : 'New motivated seller lead received.',
         '',
-        `Name: ${name}`,
-        `Phone: ${phone}`,
-        `Property Address: ${address}`,
+        `Name:               ${name}`,
+        `Phone:              ${phone}`,
+        `Property Address:   ${address}`,
         `Property Condition: ${condition}`,
-        `Submitted: ${submittedAt}`
+        `Timeline:           ${timeline}`,
+        `Submitted:          ${submittedAt}`,
+        '',
+        '--- Reply to this email to reach the seller directly ---'
     ].join('\n');
 
     try {
