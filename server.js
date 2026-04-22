@@ -100,7 +100,11 @@ app.post('/api/leads', async (req, res) => {
         return res.status(500).json({ ok: false, message: 'Email settings are incomplete on the server.' });
     }
 
-    const { name, phone, address, condition, timeline } = req.body;
+    const {
+        name, phone, address, condition, timeline,
+        utm_source, utm_medium, utm_campaign, utm_content, utm_term,
+        landing_page, referrer
+    } = req.body;
     const transporter = createTransporter(mailConfig);
 
     const submittedAt = new Date().toLocaleString('en-US', {
@@ -114,8 +118,32 @@ app.post('/api/leads', async (req, res) => {
         ? `🔥 URGENT Seller Lead: ${name} — Needs to sell NOW`
         : `New Seller Lead: ${name}`;
 
+    // Human-readable source label for the subject line and first line of the email —
+    // makes it instantly obvious which ad drove the lead without parsing UTMs.
+    const sourceLabel = utm_campaign || utm_source || 'Direct / Unknown';
+
+    // Attribution section — only rendered if any UTM is present, to keep
+    // organic / direct leads visually clean.
+    const hasAttribution = Boolean(
+        utm_source || utm_medium || utm_campaign || utm_content || utm_term || referrer
+    );
+    const attributionBlock = hasAttribution
+        ? [
+            '',
+            '--- Lead Source / Attribution ---',
+            `Campaign:       ${utm_campaign || '(none)'}`,
+            `Ad Variation:   ${utm_content  || '(none)'}`,
+            `Source:         ${utm_source   || '(none)'}`,
+            `Medium:         ${utm_medium   || '(none)'}`,
+            `Term:           ${utm_term     || '(none)'}`,
+            `Landing Page:   ${landing_page || '(none)'}`,
+            `Referrer:       ${referrer     || '(none)'}`
+          ]
+        : [];
+
     const text = [
         isUrgent ? '⚠️  URGENT — Seller indicated they need to sell ASAP.' : 'New motivated seller lead received.',
+        `Source: ${sourceLabel}`,
         '',
         `Name:               ${name}`,
         `Phone:              ${phone}`,
@@ -123,6 +151,7 @@ app.post('/api/leads', async (req, res) => {
         `Property Condition: ${condition}`,
         `Timeline:           ${timeline}`,
         `Submitted:          ${submittedAt}`,
+        ...attributionBlock,
         '',
         '--- Reply to this email to reach the seller directly ---'
     ].join('\n');
